@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base href="/edunest/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduNest Admin Dashboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        :root {
+            --admin-bg: #F8F7FF;
+            --admin-card: #FFFFFF;
+        }
+
+        body {
+            background: var(--admin-bg);
+            color: var(--charcoal);
+            font-family: var(--font-body);
+        }
+
+        /* Login Screen */
+        #adminLogin {
+            position: fixed;
+            inset: 0;
+            background: var(--gradient-hero);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* Dashboard */
+        #adminDashboard {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .admin-nav {
+            background: white;
+            padding: 1rem 0;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        .tab-btn {
+            padding: 1rem 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #F0F4F8;
+        }
+
+        .admin-table th {
+            background: #F8FAFC;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #FEFCBF;
+            color: #B7791F;
+        }
+
+        .status-approved {
+            background: #C6F6D5;
+            color: #2F855A;
+        }
+
+        .status-rejected {
+            background: #FED7D7;
+            color: #C53030;
+        }
+
+        .btn-status {
+            background: #EBF4FF;
+            color: #3182CE;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="adminLogin">
+        <div class="login-card">
+            <h2 style="margin-bottom: 1rem; color: var(--primary-color);">Admin Access</h2>
+            <p style="margin-bottom: 2rem; font-size: 0.9rem; color: var(--dark-gray);">Please enter the management PIN
+                to continue.</p>
+            <input type="password" id="pinInput" maxlength="4" placeholder="••••"
+                style="font-size: 2rem; text-align: center; letter-spacing: 0.5rem; margin-bottom: 1.5rem; width: 100%; max-width: 300px; box-sizing: border-box; border: 2px solid var(--light-gray); border-radius: 8px; padding: 0.5rem;">
+            <button id="loginBtn" class="btn btn-primary btn-full">Unlock Dashboard</button>
+            <p id="loginError" style="color: #C53030; margin-top: 1rem; display: none; font-size: 0.85rem;">Invalid PIN.
+                Please try again.</p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="adminDashboard">
+        <header class="admin-nav">
+            <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+                <a href="index.html" class="nav-link">← Back to Home</a>
+                <h1 class="logo-text" style="font-size: 1.25rem;">Admin Center</h1>
+                <button id="logoutBtn"
+                    style="background: none; border: none; color: var(--primary-color); font-weight: 600; cursor: pointer;">Logout</button>
+            </div>
+        </header>
+
+        <main class="container" style="padding-top: 3rem;">
+            <div class="tabs">
+                <div class="tab-btn active" data-tab="admissions">Student Admissions</div>
+                <div class="tab-btn" data-tab="inquiries">Parent Inquiries</div>
+            </div>
+
+            <!-- Admissions Tab -->
+            <div id="admissionsTab" class="tab-content">
+                <div id="admissionsList">Loading applications...</div>
+            </div>
+
+            <!-- Inquiries Tab -->
+            <div id="inquiriesTab" class="tab-content" style="display: none;">
+                <div id="inquiriesList">Loading inquiries...</div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { api } from './scripts/api.js';
+
+        let currentPin = "";
+
+        // Auth Logic
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const input = document.getElementById('pinInput').value;
+            const isValid = await api.verifyPin(input);
+
+            if (isValid) {
+                currentPin = input;
+                document.getElementById('adminLogin').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                loadAdmissions();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            location.reload();
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab + 'Tab').style.display = 'block';
+
+                if (btn.dataset.tab === 'admissions') loadAdmissions();
+                if (btn.dataset.tab === 'inquiries') loadInquiries();
+            });
+        });
+
+        // Data Loading
+        async function loadAdmissions() {
+            const list = document.getElementById('admissionsList');
+            list.innerHTML = '<p>Refreshing...</p>';
+
+            try {
+                const admissions = await api.getAdmissions(currentPin);
+
+                if (admissions.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📂</div>
+                            <h3>No Applications Yet</h3>
+                            <p>New student enrollments will appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Child</th>
+                                <th>Program</th>
+                                <th>Parent</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                admissions.forEach(adm => {
+                    const statusClass = `status-${adm.status.toLowerCase()}`;
+                    html += `
+                        <tr>
+                            <td>#${adm.id}</td>
+                            <td>
+                                <strong>${adm.child_name}</strong><br>
+                                <span style="font-size: 0.8rem; color: #718096">DOB: ${adm.child_dob}</span>
+                            </td>
+                            <td>${adm.program}</td>
+                            <td>${adm.parent_name}</td>
+                            <td>${adm.phone}</td>
+                            <td><span class="status-badge ${statusClass}">${adm.status}</span></td>
+                            <td>
+                                <button class="btn btn-status" onclick="window.updateStatus(${adm.id}, 'Approved')">Approve</button>
+                                <button class="btn btn-status" style="color: #C53030; background: #FED7D7;" onclick="window.updateStatus(${adm.id}, 'Rejected')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                list.innerHTML = html;
+            } catch (err) {
+                list.innerHTML = `<p style="color: red">Error: ${err.message}</p>`;
+            }
+        }
+
+        async function loadInquiries() {
+            const list = document.getElementById('inquiriesList');
+            list.innerHTML = '<p>Refreshing...</p>';
+
+            try {
+                const inquiries = await api.getInquiries(currentPin);
+
+                if (inquiries.length === 0) {
+                    list.innerHTML = `
+                        <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📨</div>
+                            <h3>No Inquiries Yet</h3>
+                            <p>Parent questions and messages will appear here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div style="display: grid; gap: 1rem;">';
+                inquiries.forEach(inq => {
+                    html += `
+                        <div class="glass-card" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: start;">
+                            <div>
+                                <h4 style="color: var(--primary-color);">${inq.parent_name}</h4>
+                                <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">${inq.email} • ${inq.phone}</p>
+                                <p style="background: #F7FAFC; padding: 1rem; border-radius: 8px;">"${inq.message}"</p>
+                                <p style="font-size: 0.8rem; color: #A0AEC0; margin-top: 0.5rem;">Received: ${new Date(inq.created_at).toLocaleString()}</p>
+                            </div>
+                            <button onclick="window.deleteInquiry(${inq.id})" style="color: #E53E3E; background: none; border: none; cursor: pointer;">🗑️</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                list.innerHTML = html;
+            } catch (err) {
+                list.innerHTML = `<p style="color: red">Error: ${err.message}</p>`;
+            }
+        }
+
+        // Global Actions
+        window.updateStatus = async (id, status) => {
+            if (!confirm(`Mark application #${id} as ${status}?`)) return;
+            await api.updateAdmissionStatus(id, status, currentPin);
+            loadAdmissions();
+        };
+
+        window.deleteInquiry = async (id) => {
+            if (!confirm('Delete this inquiry?')) return;
+            await api.deleteInquiry(id, currentPin);
+            loadInquiries();
+        };
+
+    </script>
+</body>
+
+</html>

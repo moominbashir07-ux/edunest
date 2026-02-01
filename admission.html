@@ -141,8 +141,9 @@
         </form>
     </main>
 
-    <script type="module">
-        import { api } from './scripts/api.js';
+    <script src="./scripts/api.js"></script>
+    <script>
+        const api = window.api;
 
         document.getElementById('admissionForm').addEventListener('submit', async (e) => {
             e.preventDefault();

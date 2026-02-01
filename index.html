@@ -480,13 +480,13 @@
     </style>
 
     <!-- JavaScript -->
-    <script type="module">
-        import { api } from './scripts/api.js';
-
+    <script src="./scripts/api.js"></script>
+    <script>
+        const api = window.api;
         // Expose api to window for other scripts if needed (optional)
         window.api = api; 
     </script>
-    <script type="module" src="./scripts/main.js"></script>
+    <script src="./scripts/main.js"></script>
 </body>
 
 </html>

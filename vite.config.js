@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: './', // Ensures assets are loaded correctly on GitHub Pages
+    base: './', // Changed from './' to match absolute paths in HTML
     server: {
         port: 3000,
         open: true

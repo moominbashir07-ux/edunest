@@ -9,7 +9,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="./styles/main.css">
     <style>
         :root {
             --admin-bg: #F8F7FF;
@@ -176,8 +176,12 @@
         </main>
     </div>
 
-    <script type="module">
-        import { api } from './scripts/api.js';
+    <!-- Load API as a classic script for local file support -->
+    <script src="./scripts/api.js"></script>
+
+    <script>
+        // No import needed, api is on window
+        const api = window.api;
 
         let currentPin = "";
 
